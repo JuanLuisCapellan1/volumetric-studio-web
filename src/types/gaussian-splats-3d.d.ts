@@ -1,5 +1,11 @@
 // src/types/gaussian-splats-3d.d.ts
 declare module '@mkkellogg/gaussian-splats-3d' {
+  export enum SceneFormat {
+    Ply = 0,
+    Splat = 1,
+    KSplat = 2,
+  }
+
   export interface ViewerOptions {
     rootElement?: HTMLElement
     cameraUp?: [number, number, number]
@@ -12,6 +18,7 @@ declare module '@mkkellogg/gaussian-splats-3d' {
   export interface AddSplatSceneOptions {
     splatAlphaRemovalThreshold?: number
     showLoadingUI?: boolean
+    format?: SceneFormat // ← nuevo campo
     position?: [number, number, number]
     rotation?: [number, number, number, number]
     scale?: [number, number, number]

@@ -1,3 +1,4 @@
+// src/features/viewer/useGaussianSplat.ts
 import { useEffect, useRef, useState } from 'react'
 import * as GaussianSplats3D from '@mkkellogg/gaussian-splats-3d'
 
@@ -28,32 +29,41 @@ export function useGaussianSplat(
       cameraUp: [0, 1, 0],
       initialCameraPosition: [0, 1, 5],
       initialCameraLookAt: [0, 0, 0],
-      sharedMemoryForWorkers: false, // evita requerir cross-origin isolation headers
-      selfDrivenMode: true, // el viewer maneja su propio render loop internamente
+      sharedMemoryForWorkers: false,
+      selfDrivenMode: true,
     })
 
     viewerRef.current = viewer
 
-    viewer
-      .addSplatScene(splatUrl, {
-        splatAlphaRemovalThreshold: 5,
-        showLoadingUI: false, // controlamos el loading state nosotros, no la UI de la librería
-      })
-      .then(() => {
-        if (!isMounted) return
-        viewer.start()
-        setStatus('ready')
-      })
-      .catch((err: unknown) => {
-        if (!isMounted) return
+    // try/catch síncrono ENVOLVIENDO la llamada -- red de seguridad extra
+    // para errores que la librería lance fuera de la cadena de promesas
+    // (como el "Uncaught Error" que vimos antes de aplicar el fix de formato).
+    try {
+      viewer
+        .addSplatScene(splatUrl, {
+          splatAlphaRemovalThreshold: 5,
+          showLoadingUI: false,
+          format: GaussianSplats3D.SceneFormat.Ply,
+        })
+        .then(() => {
+          if (!isMounted) return
+          viewer.start()
+          setStatus('ready')
+        })
+        .catch((err: unknown) => {
+          if (!isMounted) return
+          setError(err instanceof Error ? err.message : 'No se pudo cargar el modelo 3D')
+          setStatus('error')
+        })
+    } catch (err: unknown) {
+      if (isMounted) {
         setError(err instanceof Error ? err.message : 'No se pudo cargar el modelo 3D')
         setStatus('error')
-      })
+      }
+    }
 
     return () => {
       isMounted = false
-      // dispose() libera el contexto WebGL, buffers GPU y detiene el render loop.
-      // Sin esto, cada modelo visitado deja basura en memoria de video.
       viewer.dispose()
       viewerRef.current = null
     }
